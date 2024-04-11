@@ -1,0 +1,152 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Apr 10 18:53:12 2024
+
+@author: Matth
+"""
+
+import tkinter as tk
+from tkinter import messagebox, simpledialog
+from fitnessClub import *
+def login():
+    member_name = entry_name.get()
+    member_id = getMemberIdByName(member_name)
+    if member_id:
+        display_dashboard(member_id)
+    else:
+        response = messagebox.askyesno("Login Failed", f"Member '{member_name}' not found. Would you like to register?")
+        if response:
+            register_new_member()
+
+def register_new_member():
+    name = simpledialog.askstring("Register", "Enter your full name:")
+    email = simpledialog.askstring("Register", "Enter your email:")
+    date_of_birth = simpledialog.askstring("Register", "Enter your date of birth (YYYY-MM-DD):")
+    fitness_goal = simpledialog.askstring("Register", "Enter your fitness goal:")
+    health_metric = simpledialog.askstring("Register", "Enter your health metric:")
+    
+    if all([name, email, date_of_birth, fitness_goal, health_metric]):  # Basic check to ensure all fields are filled
+        member_id = registerMember(name, email, date_of_birth, fitness_goal, health_metric)
+        if member_id:
+            messagebox.showinfo("Registration Successful", f"You have been registered. Your member ID is {member_id}.")
+            display_dashboard(member_id)
+        else:
+            messagebox.showerror("Registration Failed", "An error occurred during registration.")
+    else:
+        messagebox.showerror("Registration Failed", "All fields are required to register.")
+def update_profile(member_id):
+    current_info = getDashboard(member_id)
+
+    email = simpledialog.askstring("Update Profile", "Update your email:", initialvalue=current_info["Email"])
+    fitness_goal = simpledialog.askstring("Update Profile", "Update your fitness goal:", initialvalue=current_info["Fitness Goal"])
+    health_metric = simpledialog.askstring("Update Profile", "Update your health metric:", initialvalue=current_info["Health Metric"])
+    
+    if email != current_info["Email"] or fitness_goal != current_info["Fitness Goal"] or health_metric != current_info["Health Metric"]:
+        updateMemberProfile(member_id, email, fitness_goal, health_metric)
+        messagebox.showinfo("Update Successful", "Your profile has been updated.")
+        display_dashboard(member_id)  
+    else:
+        messagebox.showinfo("Update", "No changes made to your profile.")
+def display_dashboard(member_id):
+    dashboard_info = getDashboard(member_id)
+    if dashboard_info:
+        for widget in frame_dashboard.winfo_children():
+            widget.destroy()
+        print(dashboard_info)
+        tk.Label(frame_dashboard, text=f"Personal ID: {member_id}").pack()
+        tk.Label(frame_dashboard, text=f"Name: {dashboard_info['Name']}").pack()
+        tk.Label(frame_dashboard, text=f"Email : {dashboard_info['Email']}").pack()
+        tk.Label(frame_dashboard, text=f"Date of Birth: {dashboard_info['Date of Birth']}").pack()
+        tk.Label(frame_dashboard, text=f"Fitness Goal: {dashboard_info['Fitness Goal']}").pack()
+        tk.Label(frame_dashboard, text=f"Health Metric: {dashboard_info['Health Metric']}").pack()
+        tk.Button(frame_dashboard, text="Update Profile", command=lambda: update_profile(member_id)).pack()
+        tk.Button(frame_dashboard, text="Book Personal Training Session", command=lambda: book_session(member_id)).pack()
+        #tk.Button(frame_dashboard, text="Book Personal Training Session", command=book_session).pack(fill=tk.X)
+        #tk.Button(frame_dashboard, text="Register for Class", command=registerForClass).pack(fill=tk.X)
+        tk.Button(app, text="Register for Class", command=register_class).pack(fill=tk.X)
+
+
+    else:
+        messagebox.showerror("Dashboard Error", "Unable to fetch dashboard information.")
+
+def fetch_all_trainers():
+    """Fetch all trainer IDs from the database."""
+    conn = connect()
+    try:
+        if conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT trainer_id, name FROM Trainers ORDER BY name")
+                trainers = cur.fetchall()
+                return trainers
+    except psycopg2.DatabaseError as error:
+        print(f"An error occurred: {error}")
+        return []
+    finally:
+        if conn:
+            conn.close()
+
+def book_session(member_id):
+    trainers = fetch_all_trainers()
+    if not trainers:
+        messagebox.showerror("Error", "No trainers found.")
+        return
+
+    # Create a new Toplevel window for booking session
+    booking_window = tk.Toplevel(app)
+    booking_window.title("Book a Session")
+
+    tk.Label(booking_window, text="Choose a trainer:").pack()
+    
+    # Dropdown to select a trainer
+    trainer_var = tk.StringVar(booking_window)
+    trainer_var.set("Select a Trainer")
+    trainer_dropdown = tk.OptionMenu(booking_window, trainer_var, *(f"{trainer[1]} (ID: {trainer[0]})" for trainer in trainers))
+    trainer_dropdown.pack()
+
+    # Entry to select a date
+    tk.Label(booking_window, text="Enter the session date (YYYY-MM-DD):").pack()
+    session_date_entry = tk.Entry(booking_window)
+    session_date_entry.pack()
+
+    def confirm_booking():
+        selected_trainer = trainer_var.get()
+        if selected_trainer == "Select a Trainer":
+            messagebox.showerror("Error", "You must select a trainer.")
+            return
+        # Extracting the ID from the trainer string
+        trainer_id = int(selected_trainer.split("(ID: ")[1].rstrip(")"))
+        
+        session_date = session_date_entry.get()
+        result = bookPersonalTrainingSession(member_id, trainer_id, session_date)
+        if result == "Training session booked successfully.":
+            messagebox.showinfo("Success", result)
+            booking_window.destroy()
+        else:
+            messagebox.showerror("Error", result)
+    
+    # Button to confirm booking
+    tk.Button(booking_window, text="Book Session", command=confirm_booking).pack()
+
+
+def register_class():
+    
+    return
+app = tk.Tk()
+app.title("Health and Fitness Club Management System")
+
+frame_login = tk.Frame(app)
+frame_login.pack()
+
+frame_dashboard = tk.Frame(app)
+frame_dashboard.pack(pady=10)
+
+tk.Label(frame_login, text="Enter your name to login:").pack(side=tk.LEFT)
+entry_name = tk.Entry(frame_login)
+entry_name.pack(side=tk.LEFT)
+tk.Button(frame_login, text="Login", command=login).pack(side=tk.LEFT)
+
+#tk.Button(app, text="Book Personal Training Session", command=book_session).pack(fill=tk.X)
+
+#tk.Button(app, text="Register for Class", command=register_class).pack(fill=tk.X)
+
+app.mainloop()
