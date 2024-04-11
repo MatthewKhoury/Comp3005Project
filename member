@@ -1,0 +1,188 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Apr  8 16:53:13 2024
+
+@author: Matth
+"""
+
+
+import psycopg2
+
+dbName = "ProjectV2"
+dbUser = "postgres"
+dbPass = "********"
+dbHost = "localhost"
+dbPort = "5432"
+
+def connect():
+    """Connect to the PostgreSQL database server"""
+    try:
+        conn = psycopg2.connect(dbname=dbName, user=dbUser, password=dbPass, host=dbHost, port=dbPort)
+        return conn
+    except psycopg2.DatabaseError as error:
+        print(error)
+        return None
+
+def getMemberIdByName(name):
+    """Fetch the member_id for a given name from the database."""
+    conn = connect()
+    memberId = None
+    try:
+        if conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT member_id FROM Members WHERE name = %s", (name,))
+                result = cur.fetchone()
+                if result:
+                    memberId = result[0]
+    except psycopg2.DatabaseError as error:
+        print(f"An error occurred: {error}")
+    finally:
+        if conn:
+            conn.close()
+    return memberId
+
+def registerForClass(memberId, classId):
+    """Allow a member to register for a group fitness class."""
+    conn = connect()
+    try:
+        if conn:
+            with conn.cursor() as cur:
+                # Check class capacity
+                cur.execute("""
+                SELECT COUNT(*) FROM Bookings WHERE class_id = %s
+                """, (classId,))
+                bookingsCount = cur.fetchone()[0]
+
+                cur.execute("""
+                SELECT capacity FROM Classes WHERE class_id = %s
+                """, (classId,))
+                capacity = cur.fetchone()[0]
+
+                if bookingsCount >= capacity:
+                    return "Class is full."
+                
+                # Register for the class
+                cur.execute("""
+                INSERT INTO Bookings (member_id, class_id)
+                VALUES (%s, %s)
+                """, (memberId, classId))
+                conn.commit()
+                return "Registered for class successfully."
+    except psycopg2.DatabaseError as error:
+        print(f"An error occurred: {error}")
+        return "Failed to register for the class."
+    finally:
+        if conn:
+            conn.close()
+
+def bookPersonalTrainingSession(memberId, trainerId, sessionDate):
+    """Book a personal training session using just the date."""
+    conn = connect()
+    try:
+        if conn:
+            with conn.cursor() as cur:
+                # Check trainer availability for the date
+                cur.execute("""
+                SELECT * FROM Sessions
+                WHERE trainer_id = %s AND date_time::date = %s
+                """, (trainerId, sessionDate))
+                if cur.fetchone():
+                    return "Trainer is not available on the selected date."
+                
+                # Book session
+                cur.execute("""
+                INSERT INTO Sessions (member_id, trainer_id, date_time)
+                VALUES (%s, %s, %s)
+                """, (memberId, trainerId, sessionDate))
+                conn.commit()
+                return "Training session booked successfully."
+    except psycopg2.DatabaseError as error:
+        print(f"An error occurred: {error}")
+        return "Failed to book the training session."
+    finally:
+        if conn:
+            conn.close()
+
+def registerMember(name, email, dateOfBirth, fitnessGoal, healthMetric):
+    """Register a new member and return the member_id."""
+    conn = connect()
+    memberId = None
+    try:
+        if conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                INSERT INTO Members (name, email, date_of_birth, fitness_goal, health_metric)
+                VALUES (%s, %s, %s, %s, %s) RETURNING member_id
+                """, (name, email, dateOfBirth, fitnessGoal, healthMetric))
+                memberId = cur.fetchone()[0]
+                conn.commit()
+    except psycopg2.DatabaseError as error:
+        print(f"An error occurred: {error}")
+    finally:
+        if conn:
+            conn.close()
+    return memberId
+
+def updateMemberProfile(memberId, email=None, fitnessGoal=None, healthMetric=None):
+    """Update member profile information based on the given member_id."""
+    conn = connect()
+    try:
+        if conn:
+            with conn.cursor() as cur:
+                if email:
+                    cur.execute("UPDATE Members SET email = %s WHERE member_id = %s", (email, memberId))
+                
+                if fitnessGoal:
+                    cur.execute("UPDATE Members SET fitness_goal = %s WHERE member_id = %s", (fitnessGoal, memberId))
+                
+                if healthMetric:
+                    cur.execute("UPDATE Members SET health_metric = %s WHERE member_id = %s", (healthMetric, memberId))
+                
+                conn.commit()
+    except psycopg2.DatabaseError as error:
+        print(f"An error occurred: {error}")
+    finally:
+        if conn:
+            conn.close()
+
+def getDashboard(memberId):
+    """Fetch and return member's dashboard information."""
+    conn = connect()
+    dashboardInfo = {}
+    try:
+        if conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                SELECT name, email, date_of_birth, fitness_goal, health_metric
+                FROM Members WHERE member_id = %s
+                """, (memberId,))
+                result = cur.fetchone()
+                if result:
+                    dashboardInfo = {
+                        "Name": result[0],
+                        "Email": result[1],
+                        "Date of Birth": result[2],
+                        "Fitness Goal": result[3],
+                        "Health Metric": result[4],
+                    }
+    except psycopg2.DatabaseError as error:
+        print(f"An error occurred: {error}")
+    finally:
+        if conn:
+            conn.close()
+    return dashboardInfo
+
+def main():
+    memberId = getMemberIdByName("John Doe")
+    trainerId = 1  # Assuming you know the trainer's ID
+    classId = 1    # Assuming you know the class ID
+
+    # Book a personal training session
+    sessionDate = "2028-05-10"  # YYYY-MM-DD format
+    print(bookPersonalTrainingSession(memberId, trainerId, sessionDate))
+
+    # Register for a group fitness class
+    print(registerForClass(memberId, classId))
+
+if __name__ == "__main__":
+    main()
