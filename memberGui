@@ -8,6 +8,8 @@ Created on Wed Apr 10 18:53:12 2024
 import tkinter as tk
 from tkinter import messagebox, simpledialog
 from fitnessClub import *
+#from setters import *
+from getter import *
 def login():
     member_name = entry_name.get()
     member_id = getMemberIdByName(member_name)
@@ -17,9 +19,12 @@ def login():
         response = messagebox.askyesno("Login Failed", f"Member '{member_name}' not found. Would you like to register?")
         if response:
             register_new_member()
+#tk.Button(app, text="Register", command=register_member(name, email, dob, goal, metric))
+
 
 def register_new_member():
     name = simpledialog.askstring("Register", "Enter your full name:")
+    
     email = simpledialog.askstring("Register", "Enter your email:")
     date_of_birth = simpledialog.askstring("Register", "Enter your date of birth (YYYY-MM-DD):")
     fitness_goal = simpledialog.askstring("Register", "Enter your fitness goal:")
@@ -43,47 +48,45 @@ def update_profile(member_id):
     
     if email != current_info["Email"] or fitness_goal != current_info["Fitness Goal"] or health_metric != current_info["Health Metric"]:
         updateMemberProfile(member_id, email, fitness_goal, health_metric)
-        messagebox.showinfo("Update Successful", "Your profile has been updated.")
+        messagebox.showinfo("update Successful", "Your profile has been updated")
         display_dashboard(member_id)  
-    else:
-        messagebox.showinfo("Update", "No changes made to your profile.")
+    
 def display_dashboard(member_id):
     dashboard_info = getDashboard(member_id)
     if dashboard_info:
-        for widget in frame_dashboard.winfo_children():
+        for widget in userDashboard.winfo_children():
             widget.destroy()
         print(dashboard_info)
-        tk.Label(frame_dashboard, text=f"Personal ID: {member_id}").pack()
-        tk.Label(frame_dashboard, text=f"Name: {dashboard_info['Name']}").pack()
-        tk.Label(frame_dashboard, text=f"Email : {dashboard_info['Email']}").pack()
-        tk.Label(frame_dashboard, text=f"Date of Birth: {dashboard_info['Date of Birth']}").pack()
-        tk.Label(frame_dashboard, text=f"Fitness Goal: {dashboard_info['Fitness Goal']}").pack()
-        tk.Label(frame_dashboard, text=f"Health Metric: {dashboard_info['Health Metric']}").pack()
-        tk.Button(frame_dashboard, text="Update Profile", command=lambda: update_profile(member_id)).pack()
-        tk.Button(frame_dashboard, text="Book Personal Training Session", command=lambda: book_session(member_id)).pack()
-        #tk.Button(frame_dashboard, text="Book Personal Training Session", command=book_session).pack(fill=tk.X)
-        #tk.Button(frame_dashboard, text="Register for Class", command=registerForClass).pack(fill=tk.X)
-        tk.Button(app, text="Register for Class", command=register_class).pack(fill=tk.X)
+        idLabel=tk.Label(userDashboard, text=f"Personal ID: {member_id}")
+        idLabel.pack()
+        nameLable=tk.Label(userDashboard, text=f"Name: {dashboard_info['Name']}")
+        nameLable.pack()
+        emailLabel=tk.Label(userDashboard, text=f"Email : {dashboard_info['Email']}")
+        emailLabel.pack()
+        bdayLabel=tk.Label(userDashboard, text=f"Date of Birth: {dashboard_info['Date of Birth']}")
+        bdayLabel.pack()
+        fgLable=tk.Label(userDashboard, text=f"Fitness Goal: {dashboard_info['Fitness Goal']}")
+        fgLable.pack()
+        hm=tk.Label(userDashboard, text=f"Health Metric: {dashboard_info['Health Metric']}")
+        hm.pack()
+        up=tk.Button(userDashboard, text="Update Profile", command=lambda: update_profile(member_id))
+        up.pack()
+        bookingBut=tk.Button(userDashboard, text="Book Personal Training Session", command=lambda: book_session(member_id))
+        bookingBut.pack()
+        #tk.Button(userDashboard, text="Book Personal Training Session", command=book_session)
+       # bookingBut.pack(fill=tk.X)
+        #tk.Button(userDashboard, text="Register for Class", command=registerForClass)
+#       regBut.pack(fill=tk.X)
+        #tk.Button(userDashboard, text="Register for Class", command=register_class)
+#        regBut.pack(fill=tk.X)
+        regBut=tk.Button(userDashboard, text="Register for Class", command=lambda: register_for_class_gui(member_id))
+        regBut.pack()
 
 
     else:
         messagebox.showerror("Dashboard Error", "Unable to fetch dashboard information.")
 
-def fetch_all_trainers():
-    """Fetch all trainer IDs from the database."""
-    conn = connect()
-    try:
-        if conn:
-            with conn.cursor() as cur:
-                cur.execute("SELECT trainer_id, name FROM Trainers ORDER BY name")
-                trainers = cur.fetchall()
-                return trainers
-    except psycopg2.DatabaseError as error:
-        print(f"An error occurred: {error}")
-        return []
-    finally:
-        if conn:
-            conn.close()
+
 
 def book_session(member_id):
     trainers = fetch_all_trainers()
@@ -91,7 +94,6 @@ def book_session(member_id):
         messagebox.showerror("Error", "No trainers found.")
         return
 
-    # Create a new Toplevel window for booking session
     booking_window = tk.Toplevel(app)
     booking_window.title("Book a Session")
 
@@ -128,19 +130,54 @@ def book_session(member_id):
     tk.Button(booking_window, text="Book Session", command=confirm_booking).pack()
 
 
-def register_class():
+
+def register_for_class_gui(member_id):
+    classes = fetch_all_classes()
+    if not classes:
+        messagebox.showerror("Error", "No classes found.")
+        return
+
+    # Create a new Toplevel window for class registration
+    class_window = tk.Toplevel(app)
+    class_window.title("Register for a Class")
+
+    tk.Label(class_window, text="Choose a class:").pack()
     
-    return
+    # Dropdown to select a class
+    class_var = tk.StringVar(class_window)
+    class_var.set("Select a Class")
+    class_dropdown = tk.OptionMenu(class_window, class_var, *(f"{class_[1]} (ID: {class_[0]})" for class_ in classes))
+    class_dropdown.pack()
+
+    def confirm_class_registration():
+        selected_class = class_var.get()
+        if selected_class == "Select a Class":
+            messagebox.showerror("Error", "You must select a class.")
+            return
+        # Extracting the ID from the class string
+        class_id = int(selected_class.split("(ID: ")[1].rstrip(")"))
+        #print(result)
+        result = registerForClass(member_id, class_id)
+        if result == "Registered for class successfully.":
+            messagebox.showinfo("Success", result)
+            class_window.destroy()
+        else:
+            messagebox.showerror("Error", result)
+    
+    # Button to confirm registration
+    tk.Button(class_window, text="Register for Class", command=confirm_class_registration).pack()
+
 app = tk.Tk()
 app.title("Health and Fitness Club Management System")
 
 frame_login = tk.Frame(app)
 frame_login.pack()
 
-frame_dashboard = tk.Frame(app)
-frame_dashboard.pack(pady=10)
+userDashboard = tk.Frame(app)
+userDashboard.pack(pady=10)
 
-tk.Label(frame_login, text="Enter your name to login:").pack(side=tk.LEFT)
+Login=tk.Label(frame_login, text="Enter your name to login:")
+Login.pack(side=tk.LEFT)
 entry_name = tk.Entry(frame_login)
 entry_name.pack(side=tk.LEFT)
 tk.Button(frame_login, text="Login", command=login).pack(side=tk.LEFT)
