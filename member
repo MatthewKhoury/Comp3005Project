@@ -10,7 +10,7 @@ import psycopg2
 
 dbName = "ProjectV2"
 dbUser = "postgres"
-dbPass = "********"
+dbPass = "grmsjm!4Now"
 dbHost = "localhost"
 dbPort = "5432"
 
