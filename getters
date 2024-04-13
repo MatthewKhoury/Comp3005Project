@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 """
-Created on Wed Apr 10 22:59:27 2024
+Getter class which retrieves necessary information from the
+gym database.
 
-@author: Matth
+@author: Matthew Khoury
 """
-from fitnessClub import *
+from member import *
+
 def fetch_all_trainers():
     """Fetch all trainer IDs from the database."""
     conn = connect()
