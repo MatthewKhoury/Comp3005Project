@@ -1,37 +1,52 @@
 # -*- coding: utf-8 -*-
 """
-Created on Wed Apr 10 18:53:12 2024
+Member GUI class which implements all GUIs necessary to member
+to interface with the gym database.
 
-@author: Matth
+@author: Matthew Khoury
+@author: Evan Baldwin
 """
 
 import tkinter as tk
 from tkinter import messagebox, simpledialog
-from fitnessClub import *
-#from setters import *
-from getter import *
+from member import *
+from getters import *
+
 def login():
     member_name = entry_name.get()
     member_id = getMemberIdByName(member_name)
     if member_id:
-        display_dashboard(member_id)
+        check_password(member_id, 1)
     else:
         response = messagebox.askyesno("Login Failed", f"Member '{member_name}' not found. Would you like to register?")
         if response:
             register_new_member()
 #tk.Button(app, text="Register", command=register_member(name, email, dob, goal, metric))
 
-
+def check_password(member_id, attempts):
+    if attempts >= 4:
+        messagebox.showinfo("Login failed", "Too many failed attempts, exiting..")
+        app.destroy()
+    password = simpledialog.askstring("Login", "Enter your password:")
+    correct = validate_password(member_id, password)
+    if correct:
+        display_dashboard(member_id)
+    else:
+        messagebox.showinfo("Login", "Incorrect password: please try again.")
+        check_password(member_id, attempts+1)
+    
 def register_new_member():
     name = simpledialog.askstring("Register", "Enter your full name:")
     
     email = simpledialog.askstring("Register", "Enter your email:")
     date_of_birth = simpledialog.askstring("Register", "Enter your date of birth (YYYY-MM-DD):")
-    fitness_goal = simpledialog.askstring("Register", "Enter your fitness goal:")
-    health_metric = simpledialog.askstring("Register", "Enter your health metric:")
+    password = simpledialog.askstring("Register", "Enter your password (max 20 characters):")
+    height = simpledialog.askstring("Register", "Enter your current height (inches):")
+    weight = simpledialog.askstring("Register", "Enter your current weight (pounds):")
+    avg_bp = simpledialog.askstring("Register", "Enter your expected average blood pressure:")
     
-    if all([name, email, date_of_birth, fitness_goal, health_metric]):  # Basic check to ensure all fields are filled
-        member_id = registerMember(name, email, date_of_birth, fitness_goal, health_metric)
+    if all([name, email, date_of_birth, password, height, weight, avg_bp]):  # Basic check to ensure all fields are filled
+        member_id = registerMember(name, email, date_of_birth, password, height, weight, avg_bp)
         if member_id:
             messagebox.showinfo("Registration Successful", f"You have been registered. Your member ID is {member_id}.")
             display_dashboard(member_id)
@@ -39,24 +54,150 @@ def register_new_member():
             messagebox.showerror("Registration Failed", "An error occurred during registration.")
     else:
         messagebox.showerror("Registration Failed", "All fields are required to register.")
+
+def view_routines(member_id, routineNum):
+    routine_info = getRoutineInfo(member_id, routineNum)
+    if routine_info:
+        for widget in userDashboard.winfo_children():
+            widget.destroy()
+        idLabel=tk.Label(userDashboard, text=f"Routine Number: {routine_info['Routine Number']}")
+        idLabel.pack()
+        timeLable=tk.Label(userDashboard, text=f"Time Limit: {routine_info['Time Limit']}")
+        timeLable.pack()
+        exerciseLabel=tk.Label(userDashboard, text=f"Exercise List : {routine_info['Exercises']}")
+        exerciseLabel.pack()
+        repsLabel=tk.Label(userDashboard, text=f"Number of Reps: {routine_info['Num of Reps']}")
+        repsLabel.pack()
+        nextBut=tk.Button(userDashboard, text="Next Routine", command=lambda:view_routines(member_id, routineNum+1))
+        nextBut.pack()
+        if routineNum > 1:
+            backBut=tk.Button(userDashboard, text="Previous Routine", command=lambda:view_routines(member_id, routineNum-1))
+            backBut.pack()
+        vwback=tk.Button(userDashboard, text="Back to Menu", command=lambda: display_dashboard(member_id))
+        vwback.pack()
+        
+    else:
+        messagebox.showerror("Routine Error", "This routine does not exist.")
+    
+def view_goals(member_id, goalNum):
+    goal_info = getGoalInfo(member_id, goalNum)
+    if goal_info:
+        for widget in userDashboard.winfo_children():
+            widget.destroy()
+        idLabel=tk.Label(userDashboard, text=f"Goal Number: {goal_info['Goal Number']}")
+        idLabel.pack()
+        dateLable=tk.Label(userDashboard, text=f"Start Date: {goal_info['Start Date']}")
+        dateLable.pack()
+        weightLabel=tk.Label(userDashboard, text=f"Goal Weight: {goal_info['Weight']}")
+        weightLabel.pack()
+        timeLabel=tk.Label(userDashboard, text=f"Goal Time: {goal_info['Goal Time']}")
+        timeLabel.pack()
+        nextBut=tk.Button(userDashboard, text="Next Goal", command=lambda:view_goals(member_id, goalNum+1))
+        nextBut.pack()
+        if goalNum > 1:
+            backBut=tk.Button(userDashboard, text="Previous Goal", command=lambda:view_goals(member_id, goalNum-1))
+            backBut.pack()
+        vwback=tk.Button(userDashboard, text="Back to Menu", command=lambda: display_dashboard(member_id))
+        vwback.pack()
+        
+    else:
+        messagebox.showerror("Goal Error", "Error with retrieving goals, goal does not exist.")
+    
+def view_achievements(member_id, achieveNum):
+    achievement_info = getAchievementsInfo(member_id, achieveNum)
+    if achievement_info:
+        for widget in userDashboard.winfo_children():
+            widget.destroy()
+        idLabel=tk.Label(userDashboard, text=f"Achievement Number: {achievement_info['Achieve Num']}")
+        idLabel.pack()
+        dateLable=tk.Label(userDashboard, text=f"Date Achieved: {achievement_info['Date Achieved']}")
+        dateLable.pack()
+        descLabel=tk.Label(userDashboard, text=f"Description: {achievement_info['Description']}")
+        descLabel.pack()
+        nextBut=tk.Button(userDashboard, text="Next Achievement", command=lambda:view_achievements(member_id, achieveNum+1))
+        nextBut.pack()
+        if achieveNum > 1:
+            backBut=tk.Button(userDashboard, text="Previous Achievement", command=lambda:view_achievements(member_id, achieveNum-1))
+            backBut.pack()
+        vwback=tk.Button(userDashboard, text="Back to Menu", command=lambda: display_dashboard(member_id))
+        vwback.pack()
+        
+    else:
+        messagebox.showerror("Achievement Error", "This acheivement does not exist.")
+    
+def view_health(member_id):
+    health_info = getHealthInfo(member_id)
+    if health_info:
+        for widget in userDashboard.winfo_children():
+            widget.destroy()
+        idLabel=tk.Label(userDashboard, text=f"Member ID: {member_id}")
+        idLabel.pack()
+        dateLable=tk.Label(userDashboard, text=f"Last Updated: {health_info['Last Date']}")
+        dateLable.pack()
+        heightLabel=tk.Label(userDashboard, text=f"Height (inches): {health_info['Height']}")
+        heightLabel.pack()
+        weightLable=tk.Label(userDashboard, text=f"Weight (pounds): {health_info['Weight']}")
+        weightLable.pack()
+        avgbpLabel=tk.Label(userDashboard, text=f"Average Blood Pressure: {health_info['Avg BP']}")
+        avgbpLabel.pack()
+        vwback=tk.Button(userDashboard, text="Back to Menu", command=lambda: display_dashboard(member_id))
+        vwback.pack()
+        
+    else:
+        messagebox.showerror("Dashboard Error", "Unable to fetch dashboard information.")
+
+def display_bills(member_id, billNum):
+    bill_info = getBillInfo(member_id, billNum)
+    if bill_info:
+        for widget in userDashboard.winfo_children():
+            widget.destroy()
+        idLabel=tk.Label(userDashboard, text=f"Bill ID: {bill_info['Bill ID']}")
+        idLabel.pack()
+        dateLable=tk.Label(userDashboard, text=f"Amount Due: {bill_info['Amount Due']}")
+        dateLable.pack()
+        heightLabel=tk.Label(userDashboard, text=f"Due Date: {bill_info['Due Date']}")
+        heightLabel.pack()
+        nextBut=tk.Button(userDashboard, text="Next Bill", command=lambda:display_bills(member_id, billNum+1))
+        nextBut.pack()
+        if billNum > 1:
+            backBut=tk.Button(userDashboard, text="Previous Bill", command=lambda:display_bills(member_id, billNum-1))
+            backBut.pack()
+        vwback=tk.Button(userDashboard, text="Back to Menu", command=lambda: display_dashboard(member_id))
+        vwback.pack()
+    else:
+        messagebox.showerror("Bill Error", "This bill does not exist.")
+    
 def update_profile(member_id):
     current_info = getDashboard(member_id)
-
     email = simpledialog.askstring("Update Profile", "Update your email:", initialvalue=current_info["Email"])
-    fitness_goal = simpledialog.askstring("Update Profile", "Update your fitness goal:", initialvalue=current_info["Fitness Goal"])
-    health_metric = simpledialog.askstring("Update Profile", "Update your health metric:", initialvalue=current_info["Health Metric"])
-    
-    if email != current_info["Email"] or fitness_goal != current_info["Fitness Goal"] or health_metric != current_info["Health Metric"]:
-        updateMemberProfile(member_id, email, fitness_goal, health_metric)
-        messagebox.showinfo("update Successful", "Your profile has been updated")
+    password = simpledialog.askstring("Update Profile", "Update your password:", initialvalue=current_info["Password"])
+    if email != current_info["Email"] or password != current_info["Password"]:
+        updateMemberProfile(member_id, email, password)
+        messagebox.showinfo("Update Successful", "Your info has been updated")
         display_dashboard(member_id)  
+
+def update_health(member_id):
+    height = simpledialog.askstring("Update Health Stats", "Update your height (inches):")
+    weight = simpledialog.askstring("Update Health Stats", "Update your weight (pounds):")
+    avg_bp = simpledialog.askstring("Update Health Stats", "Update your average blood pressure:")
+    
+    updateMemberHealth(member_id, height, weight, avg_bp)
+    messagebox.showinfo("Update Successful", "Your health stats has been updated")
+    display_dashboard(member_id)  
+    
+def update_goals(member_id):
+    desired_weight = simpledialog.askstring("Add New Goal", "New Desired Weight:")
+    goal_time = simpledialog.askstring("Add New Goal", "Desired Goal Date (YYYY-MM-DD)")
+    
+    updateMemberGoals(member_id, desired_weight, goal_time)
+    messagebox.showinfo("Update Successful", "Your new goal has been added")
+    display_dashboard(member_id)
     
 def display_dashboard(member_id):
     dashboard_info = getDashboard(member_id)
     if dashboard_info:
         for widget in userDashboard.winfo_children():
             widget.destroy()
-        print(dashboard_info)
         idLabel=tk.Label(userDashboard, text=f"Personal ID: {member_id}")
         idLabel.pack()
         nameLable=tk.Label(userDashboard, text=f"Name: {dashboard_info['Name']}")
@@ -65,28 +206,44 @@ def display_dashboard(member_id):
         emailLabel.pack()
         bdayLabel=tk.Label(userDashboard, text=f"Date of Birth: {dashboard_info['Date of Birth']}")
         bdayLabel.pack()
-        fgLable=tk.Label(userDashboard, text=f"Fitness Goal: {dashboard_info['Fitness Goal']}")
-        fgLable.pack()
-        hm=tk.Label(userDashboard, text=f"Health Metric: {dashboard_info['Health Metric']}")
-        hm.pack()
-        up=tk.Button(userDashboard, text="Update Profile", command=lambda: update_profile(member_id))
-        up.pack()
+        vwmore=tk.Button(userDashboard, text="View Detailed User Info", command=lambda: display_more(member_id))
+        vwmore.pack()
+        vwup=tk.Button(userDashboard, text="Update User Info", command=lambda: display_update(member_id))
+        vwup.pack()
         bookingBut=tk.Button(userDashboard, text="Book Personal Training Session", command=lambda: book_session(member_id))
         bookingBut.pack()
-        #tk.Button(userDashboard, text="Book Personal Training Session", command=book_session)
-       # bookingBut.pack(fill=tk.X)
-        #tk.Button(userDashboard, text="Register for Class", command=registerForClass)
-#       regBut.pack(fill=tk.X)
-        #tk.Button(userDashboard, text="Register for Class", command=register_class)
-#        regBut.pack(fill=tk.X)
         regBut=tk.Button(userDashboard, text="Register for Class", command=lambda: register_for_class_gui(member_id))
         regBut.pack()
-
-
+        billbut=tk.Button(userDashboard, text="Check Current Bills", command=lambda: display_bills(member_id, 1))
+        billbut.pack()
     else:
         messagebox.showerror("Dashboard Error", "Unable to fetch dashboard information.")
 
-
+def display_more(member_id):
+    for widget in userDashboard.winfo_children():
+        widget.destroy()
+    vwrout=tk.Button(userDashboard, text="View Exercise Routines", command=lambda: view_routines(member_id, 1))
+    vwrout.pack()
+    vwgoal=tk.Button(userDashboard, text="View Fitness Goals", command=lambda: view_goals(member_id, 1))
+    vwgoal.pack()
+    vwachv=tk.Button(userDashboard, text="View Fitness Achievements", command=lambda: view_achievements(member_id, 1))
+    vwachv.pack()
+    vwheal=tk.Button(userDashboard, text="View Full Health Metrics", command=lambda: view_health(member_id))
+    vwheal.pack()
+    vwback=tk.Button(userDashboard, text="Back to Menu", command=lambda: display_dashboard(member_id))
+    vwback.pack()
+    
+def display_update(member_id):
+    for widget in userDashboard.winfo_children():
+        widget.destroy()
+    upemail=tk.Button(userDashboard, text="Update Profile", command=lambda: update_profile(member_id))
+    upemail.pack()
+    upheal=tk.Button(userDashboard, text="Update Health Metrics", command=lambda:update_health(member_id))
+    upheal.pack()
+    upgoal=tk.Button(userDashboard, text="Add New Fitness Goal", command=lambda:update_goals(member_id))
+    upgoal.pack()
+    upback=tk.Button(userDashboard, text="Back to Menu", command=lambda: display_dashboard(member_id))
+    upback.pack()
 
 def book_session(member_id):
     trainers = fetch_all_trainers()
@@ -110,7 +267,7 @@ def book_session(member_id):
     session_date_entry = tk.Entry(booking_window)
     session_date_entry.pack()
 
-    def confirm_booking():
+    def confirm_booking():  
         selected_trainer = trainer_var.get()
         if selected_trainer == "Select a Trainer":
             messagebox.showerror("Error", "You must select a trainer.")
