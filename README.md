@@ -28,7 +28,27 @@ performed by accepting user input and interfacing with the relational database t
 information relevant to the query. 
 
 # Using the program
-1) 
+- Execution:
+  -Member: To run the program from the members perspective, you are first
+   greeted with a login/registration window. this window is neccessary to
+   allow members to only interact with their own personal information and
+   not mess up other peoples information. Upon a succesful login the member
+   will be greeted with a new window to access and manipulate their data base
+   through a user friendly Graphical user interface.
+   
+  -Trainer:Running the code from the trainers side will follow a similar concept. 
+   Each trainer will have the chance to log in and/or register to the database. 
+   Upon a succesful login/registration the trainer will then be greeted with a 
+   new window to which he again will then get the chance to manipulate their 
+   database with their own functions.
+   
+
+  -Admin:From the Admin perspective there is only a log in feature as we believe
+  for safttey of the data base no one should be allowed to register as an admin
+  without proper screening. Upon a succesful log in the admin wil be granted access
+  to modify room bookings, equipment maintenance and class scheduling. The admin
+  should also be given access to view and accept payments through the application.
+  These payments are dynamically added in when a user registers.
 
 # Deliverables
 - Source code:
@@ -60,22 +80,7 @@ information relevant to the query.
     decisions and implementation can be found under the name of 
     "COMP3005 Project2 Final Report".
 
-- Execution:
-  -Member: To run the program from the members perspective, you are first
-   greeted with a login/registration window. this window is neccessary to
-   allow members to only interact with their own personal information and
-   not mess up other peoples information. Upon a succesful login the member
-   will be greeted with a new window to access and manipulate their data base
-   through a user friendly Graphical user interface.
-   
-  -Trainer:Running the code from the trainers side will follow a similar concept. 
-   Each trainer will have the chance to log in and/or register to the database. 
-   Upon a succesful login/registration the trainer will then be greeted with a 
-   new window to which he again will then get the chance to manipulate their 
-   database with their own functions.
-   
 
-  -Admin:
 	
 	
 # Bonus Features
