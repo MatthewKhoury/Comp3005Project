@@ -11,6 +11,7 @@ The database for this system is implemented in PostgreSQL utilizing the provided
 to create all tables necessary for implementation and populate those tables with data necessary to
 demonstrate all functionalities. A demonstration of the conceptual design of the system, as well as 
 critical code components and individual functionalities can be found at the following link:
+https://www.youtube.com/watch?v=3R8jK65Y3Ko 
 
 
 There are three individual applications run through the GUI scripts which each model a separate user
